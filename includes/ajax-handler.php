@@ -70,8 +70,12 @@ function ai_builder_handle_ajax_request() {
         ],
         'temperature' => 0.6,
         'max_tokens'  => 4000,
-        'response_format' => ['type' => 'json_object'] // Enforce JSON output
     ];
+    
+    // **FIX:** Conditionally add response_format ONLY for OpenAI, as OpenRouter/Claude does not support it.
+    if ($provider === 'openai') {
+        $body['response_format'] = ['type' => 'json_object'];
+    }
     
     $args = [
         'body'    => json_encode($body),
@@ -104,13 +108,24 @@ function ai_builder_handle_ajax_request() {
         wp_send_json_error(['message' => 'AI returned an empty response.'], 500);
         return;
     }
+    
+    // In case the model doesn't respect the JSON mode, we try to find the JSON blob.
+    if (strpos($ai_response_content, '{') !== 0) {
+        $json_start = strpos($ai_response_content, '{');
+        $json_end = strrpos($ai_response_content, '}');
+        if ($json_start !== false && $json_end !== false) {
+            $ai_response_content = substr($ai_response_content, $json_start, ($json_end - $json_start) + 1);
+        }
+    }
 
     $concept_data = json_decode($ai_response_content, true);
 
     if (json_last_error() === JSON_ERROR_NONE) {
         wp_send_json_success($concept_data);
     } else {
-        wp_send_json_error(['message' => 'AI returned an invalid JSON format. Error: ' . json_last_error_msg()], 500);
+        error_log('AI Builder JSON Parse Error: ' . json_last_error_msg());
+        error_log('AI Builder Raw Response: ' . $ai_response_content);
+        wp_send_json_error(['message' => 'AI returned an invalid response format. Please try again.'], 500);
     }
 }
 
@@ -207,3 +222,4 @@ function ai_builder_get_detailed_prompt($input) {
     }
     ";
 }
+

@@ -3,7 +3,7 @@
  * Plugin Name:       AI Builder
  * Plugin URI:        https://sawahsolutions.com
  * Description:       Generates comprehensive website concepts, including strategy, wireframes, and design recommendations using AI.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            Mohamed Sawah
  * Author URI:        https://sawahsolutions.com
  * License:           GPL v2 or later
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('AI_BUILDER_VERSION', '1.0.0');
+define('AI_BUILDER_VERSION', '1.0.1');
 define('AI_BUILDER_PATH', plugin_dir_path(__FILE__));
 define('AI_BUILDER_URL', plugin_dir_url(__FILE__));
 
@@ -28,9 +28,6 @@ class AI_Website_Builder {
     public function __construct() {
         // Register shortcode
         add_shortcode('ai_website_concept_generator', [$this, 'render_shortcode']);
-
-        // Enqueue scripts and styles
-        add_action('wp_enqueue_scripts', [$this, 'enqueue_scripts']);
         
         // Register admin menu and settings
         add_action('admin_menu', [$this, 'add_admin_menu']);
@@ -38,32 +35,26 @@ class AI_Website_Builder {
     }
 
     /**
-     * Render the shortcode form.
+     * Render the shortcode form and enqueue scripts/styles.
+     * This is a more reliable method to ensure assets are loaded.
      */
     public function render_shortcode() {
+        // Enqueue scripts and styles directly here
+        wp_enqueue_style('ai-builder-tailwind', 'https://cdn.tailwindcss.com', [], null);
+        wp_enqueue_style('ai-builder-fonts', 'https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap', [], null);
+        wp_enqueue_style('ai-builder-style', AI_BUILDER_URL . 'assets/style.css', [], AI_BUILDER_VERSION);
+        
+        wp_enqueue_script('ai-builder-script', AI_BUILDER_URL . 'assets/script.js', [], AI_BUILDER_VERSION, true);
+        
+        // Pass data to script
+        wp_localize_script('ai-builder-script', 'aiBuilderAjax', [
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce'   => wp_create_nonce('ai_builder_nonce')
+        ]);
+
         ob_start();
         include(AI_BUILDER_PATH . 'includes/shortcode-form.php');
         return ob_get_clean();
-    }
-
-    /**
-     * Enqueue scripts and styles for the front end.
-     */
-    public function enqueue_scripts() {
-        global $post;
-        if (is_a($post, 'WP_Post') && has_shortcode($post->post_content, 'ai_website_concept_generator')) {
-            wp_enqueue_style('ai-builder-tailwind', 'https://cdn.tailwindcss.com', [], false);
-            wp_enqueue_style('ai-builder-fonts', 'https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap', [], false);
-            wp_enqueue_style('ai-builder-style', AI_BUILDER_URL . 'assets/style.css', [], AI_BUILDER_VERSION);
-            
-            wp_enqueue_script('ai-builder-script', AI_BUILDER_URL . 'assets/script.js', [], AI_BUILDER_VERSION, true);
-            
-            // Pass data to script
-            wp_localize_script('ai-builder-script', 'aiBuilderAjax', [
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce'   => wp_create_nonce('ai_builder_nonce')
-            ]);
-        }
     }
     
     /**
@@ -185,3 +176,4 @@ class AI_Website_Builder {
 }
 
 new AI_Website_Builder();
+
