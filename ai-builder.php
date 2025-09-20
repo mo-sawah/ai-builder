@@ -3,7 +3,7 @@
  * Plugin Name:       AI Builder
  * Plugin URI:        https://sawahsolutions.com
  * Description:       Generates comprehensive website concepts, including strategy, wireframes, and design recommendations using AI.
- * Version:           1.0.1
+ * Version:           1.0.2
  * Author:            Mohamed Sawah
  * Author URI:        https://sawahsolutions.com
  * License:           GPL v2 or later
@@ -16,7 +16,7 @@ if (!defined('ABSPATH')) {
 }
 
 // Define plugin constants
-define('AI_BUILDER_VERSION', '1.0.1');
+define('AI_BUILDER_VERSION', '1.0.2');
 define('AI_BUILDER_PATH', plugin_dir_path(__FILE__));
 define('AI_BUILDER_URL', plugin_dir_url(__FILE__));
 
@@ -36,11 +36,12 @@ class AI_Website_Builder {
 
     /**
      * Render the shortcode form and enqueue scripts/styles.
-     * This is a more reliable method to ensure assets are loaded.
      */
     public function render_shortcode() {
-        // Enqueue scripts and styles directly here
-        wp_enqueue_style('ai-builder-tailwind', 'https://cdn.tailwindcss.com', [], null);
+        // **THE FIX:** Load Tailwind via wp_enqueue_script as it's a JS file, not a CSS file.
+        wp_enqueue_script('ai-builder-tailwind', 'https://cdn.tailwindcss.com', [], null, false);
+        
+        // Enqueue other assets
         wp_enqueue_style('ai-builder-fonts', 'https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&display=swap', [], null);
         wp_enqueue_style('ai-builder-style', AI_BUILDER_URL . 'assets/style.css', [], AI_BUILDER_VERSION);
         
@@ -170,7 +171,7 @@ class AI_Website_Builder {
         $options = get_option('ai_builder_settings');
         ?>
         <input type="password" name="ai_builder_settings[openrouter_api_key]" value="<?php echo esc_attr($options['openrouter_api_key'] ?? ''); ?>" class="regular-text">
-         <p class="description">Enter your API key for OpenRouter. Your site URL (<?php echo esc_url(home_url()); ?>) should be added to the "HTTP Referer" allowlist in your OpenRouter settings.</p>
+         <p class="description">Enter your site URL (<?php echo esc_url(home_url()); ?>) should be added to the "HTTP Referer" allowlist in your OpenRouter settings.</p>
         <?php
     }
 }
